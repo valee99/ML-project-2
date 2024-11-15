@@ -1,6 +1,0 @@
-# no_contrast_data.yaml
-train: /Users/valentinaolaritei/Desktop/3_SEMESTER/ML_project_2/dataset_split/images_with_contrast/train
-val: /Users/valentinaolaritei/Desktop/3_SEMESTER/ML_project_2/dataset_split/images_with_contrast/val
-
-nc: 3  # Number of classes
-names: ['Living', 'Non-Living', 'Bubble']
