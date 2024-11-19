@@ -1,0 +1,16 @@
+# https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#21-create-datasetyaml 
+
+# Paths
+path: /Users/valentinaolaritei/Desktop/3_SEMESTER/ML_project_2/dataset_split
+train: images_cropped_with_contrast/train
+val: images_cropped_with_contrast/val
+test: images_cropped_with_contrast/test
+
+# Number of classes
+nc: 3
+
+# Class names
+names:
+  0: Living
+  1: Non-Living
+  2: Bubble
