@@ -76,8 +76,6 @@ def process_geojson_file(
     class_mapping: dict,
     min_range: int,
     max_range: int,
-    img_height: int,
-    img_width: int,
 ):
     """
     Process a single geoJSON file and its corresponding .tif file.
@@ -96,6 +94,7 @@ def process_geojson_file(
     # Open the .tif file and process each frame specified in the geoJSON
     img_stack = tiff.imread(tif_path)
     for slice_idx, slice_array in enumerate(img_stack):
+        img_height, img_width = slice_array.shape
         slice_labels = process_slice(
             slice_idx, geojson_data, class_mapping, img_height, img_width
         )
@@ -124,8 +123,6 @@ def main(
     class_mapping: dict,
     min_range: int,
     max_range: int,
-    img_height: int,
-    img_width: int,
 ):
 
     os.makedirs(output_label_dir, exist_ok=True)
@@ -156,10 +153,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_contrast", type=int, default=255)
     args = parser.parse_args()
 
-    # Image dimensions for YOLO normalization
-    IMAGE_WIDTH = 1616
-    IMAGE_HEIGHT = 1240
-
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
     PATH_OUTPUT_LABELED_DIR = (
@@ -173,6 +166,4 @@ if __name__ == "__main__":
         CLASS_MAPPING,
         args.min_contrast,
         args.max_contrast,
-        IMAGE_HEIGHT,
-        IMAGE_WIDTH,
     )
