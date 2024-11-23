@@ -136,8 +136,6 @@ def main(
             class_mapping,
             min_range,
             max_range,
-            img_height,
-            img_width,
         )
 
 
