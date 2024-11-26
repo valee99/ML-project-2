@@ -71,7 +71,7 @@ def move_files(files: dict, path_labeled_dir: str, path_split_dir: str):
 
 def create_yaml(dataset_name: str):
     content = {
-        "path": f"./data/data_split/{dataset_name}",
+        "path": dataset_name,
         "train": "train/images",
         "val": "val/images",
         "test": "test/images",

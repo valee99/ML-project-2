@@ -4,7 +4,7 @@ import numpy as np
 import tifffile as tiff
 from PIL import Image
 import argparse
-
+import cv2
 
 def get_geojson_files(geojson_dir: str) -> set:
     """
@@ -23,6 +23,7 @@ def process_slice(
     class_mapping: dict,
     img_height: int,
     img_width: int,
+    min_surface: int,
 ) -> str:
 
     slice_features = [
@@ -48,8 +49,12 @@ def process_slice(
             y_center = (min_y + max_y) / 2 / img_height
             width = (max_x - min_x) / img_width
             height = (max_y - min_y) / img_height
-            slice_labels.append(f"{class_id} {x_center} {y_center} {width} {height}")
-        slice_labels = "\n".join(slice_labels)
+            if (max_x - min_x) * (max_y - min_y) >= min_surface:
+                slice_labels.append(f"{class_id} {x_center} {y_center} {width} {height}")
+        if slice_labels != []:
+            slice_labels = "\n".join(slice_labels)
+        else:
+            slice_labels = ""
 
     else:
 
@@ -62,10 +67,20 @@ def adjust_contrast(
     slice_array: np.ndarray, min_range: int, max_range: int
 ) -> np.ndarray:
 
-    slice_min, slice_max = np.min(slice_array), np.max(slice_array)
-    normalized_slice = (slice_array - slice_min) / (slice_max - slice_min)
-    adjusted_slice_array = min_range + normalized_slice * (max_range - min_range)
-    return adjusted_slice_array
+    cliped_array = np.clip(slice_array, min_range, max_range)
+    adjusted_slice = 255*((cliped_array - min_range) / (max_range - min_range))
+    return adjusted_slice
+
+def preprocess_image(slice_array: np.array, kernel_size: tuple=(4,4), sigma: int=1, iterations: int=1, thresh: int = 0, process_iter: int=1) -> np.array:
+    preprocess_array = slice_array.copy()
+    for _ in range(process_iter):
+        blurred_array = cv2.GaussianBlur(preprocess_array.astype(np.uint8), (5,5), sigma)
+        _, binarized_array = cv2.threshold(blurred_array.astype(np.uint8), thresh, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        kernel = np.ones(kernel_size, np.uint8)
+        dilated = cv2.dilate(binarized_array.astype(np.uint8), kernel, iterations=iterations)  
+        cleaned_array = cv2.erode(dilated.astype(np.uint8), kernel, iterations=iterations)
+        preprocess_array = np.where(cleaned_array==255,255,preprocess_array)
+    return preprocess_array
 
 
 def process_geojson_file(
@@ -76,6 +91,8 @@ def process_geojson_file(
     class_mapping: dict,
     min_range: int,
     max_range: int,
+    min_surface: int,
+    preprocess: bool,
 ):
     """
     Process a single geoJSON file and its corresponding .tif file.
@@ -96,10 +113,14 @@ def process_geojson_file(
     for slice_idx, slice_array in enumerate(img_stack):
         img_height, img_width = slice_array.shape
         slice_labels = process_slice(
-            slice_idx, geojson_data, class_mapping, img_height, img_width
+            slice_idx, geojson_data, class_mapping, img_height, img_width, min_surface
         )
         adjust_slice_array = adjust_contrast(slice_array, min_range, max_range)
-        adjusted_image = Image.fromarray(adjust_slice_array.astype(np.uint8))
+        if preprocess:
+            preprocessed_array = preprocess_image(adjust_slice_array, (4,4), 1, 1, 0, 3)
+            adjusted_image = Image.fromarray(preprocessed_array.astype(np.uint8))
+        else:
+            adjusted_image = Image.fromarray(adjust_slice_array.astype(np.uint8))
 
         image_path = os.path.join(
             output_label_dir,
@@ -123,6 +144,8 @@ def main(
     class_mapping: dict,
     min_range: int,
     max_range: int,
+    min_surface: int,
+    preprocess: bool,
 ):
 
     os.makedirs(output_label_dir, exist_ok=True)
@@ -136,7 +159,10 @@ def main(
             class_mapping,
             min_range,
             max_range,
+            min_surface,
+            preprocess,
         )
+    print(f"Data saved at {output_label_dir}")
 
 
 if __name__ == "__main__":
@@ -149,12 +175,14 @@ if __name__ == "__main__":
     parser.add_argument("--path_output", type=str, default="./data/data_labeled")
     parser.add_argument("--min_contrast", type=int, default=210)
     parser.add_argument("--max_contrast", type=int, default=255)
+    parser.add_argument("--min_surface", type=int, default=144)
+    parser.add_argument("--preprocess", action="store_true", default=False)
     args = parser.parse_args()
 
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
     PATH_OUTPUT_LABELED_DIR = (
-        f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}"
+        f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}"
     )
 
     main(
@@ -164,4 +192,6 @@ if __name__ == "__main__":
         CLASS_MAPPING,
         args.min_contrast,
         args.max_contrast,
+        args.min_surface,
+        args.preprocess,
     )
