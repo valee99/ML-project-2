@@ -6,6 +6,7 @@ from PIL import Image
 import argparse
 import cv2
 
+
 def get_geojson_files(geojson_dir: str) -> set:
     """
     Get set of geoJSON file names without extensions.
@@ -50,7 +51,9 @@ def process_slice(
             width = (max_x - min_x) / img_width
             height = (max_y - min_y) / img_height
             if (max_x - min_x) * (max_y - min_y) >= min_surface:
-                slice_labels.append(f"{class_id} {x_center} {y_center} {width} {height}")
+                slice_labels.append(
+                    f"{class_id} {x_center} {y_center} {width} {height}"
+                )
         if slice_labels != []:
             slice_labels = "\n".join(slice_labels)
         else:
@@ -68,18 +71,37 @@ def adjust_contrast(
 ) -> np.ndarray:
 
     cliped_array = np.clip(slice_array, min_range, max_range)
-    adjusted_slice = 255*((cliped_array - min_range) / (max_range - min_range))
+    adjusted_slice = 255 * ((cliped_array - min_range) / (max_range - min_range))
     return adjusted_slice
 
-def preprocess_image(slice_array: np.array, kernel_size: tuple=(4,4), sigma: int=1, iterations: int=1, thresh: int = 0, process_iter: int=1) -> np.array:
+
+def preprocess_image(
+    slice_array: np.array,
+    kernel_size: tuple = (4, 4),
+    sigma: int = 1,
+    iterations: int = 1,
+    thresh: int = 0,
+    process_iter: int = 1,
+) -> np.array:
     preprocess_array = slice_array.copy()
     for _ in range(process_iter):
-        blurred_array = cv2.GaussianBlur(preprocess_array.astype(np.uint8), (5,5), sigma)
-        _, binarized_array = cv2.threshold(blurred_array.astype(np.uint8), thresh, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        blurred_array = cv2.GaussianBlur(
+            preprocess_array.astype(np.uint8), (5, 5), sigma
+        )
+        _, binarized_array = cv2.threshold(
+            blurred_array.astype(np.uint8),
+            thresh,
+            255,
+            cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+        )
         kernel = np.ones(kernel_size, np.uint8)
-        dilated = cv2.dilate(binarized_array.astype(np.uint8), kernel, iterations=iterations)  
-        cleaned_array = cv2.erode(dilated.astype(np.uint8), kernel, iterations=iterations)
-        preprocess_array = np.where(cleaned_array==255,255,preprocess_array)
+        dilated = cv2.dilate(
+            binarized_array.astype(np.uint8), kernel, iterations=iterations
+        )
+        cleaned_array = cv2.erode(
+            dilated.astype(np.uint8), kernel, iterations=iterations
+        )
+        preprocess_array = np.where(cleaned_array == 255, 255, preprocess_array)
     return preprocess_array
 
 
@@ -117,7 +139,9 @@ def process_geojson_file(
         )
         adjust_slice_array = adjust_contrast(slice_array, min_range, max_range)
         if preprocess:
-            preprocessed_array = preprocess_image(adjust_slice_array, (4,4), 1, 1, 0, 3)
+            preprocessed_array = preprocess_image(
+                adjust_slice_array, (4, 4), 1, 1, 0, 3
+            )
             adjusted_image = Image.fromarray(preprocessed_array.astype(np.uint8))
         else:
             adjusted_image = Image.fromarray(adjust_slice_array.astype(np.uint8))
@@ -181,9 +205,7 @@ if __name__ == "__main__":
 
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
-    PATH_OUTPUT_LABELED_DIR = (
-        f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}"
-    )
+    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}"
 
     main(
         args.path_images,

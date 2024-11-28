@@ -20,7 +20,7 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
         if basename(path).split(".")[0] not in files_with_labels
     ]
 
-    #Setting seed for reproducibility
+    # Setting seed for reproducibility
     random.seed(42)
     random.shuffle(files_with_labels)
     random.shuffle(files_without_labels)
@@ -69,6 +69,7 @@ def move_files(files: dict, path_labeled_dir: str, path_split_dir: str):
             if os.path.exists(label_file):
                 shutil.copy(label_file, split_label_file)
 
+
 def create_yaml(dataset_name: str):
     content = {
         "path": dataset_name,
@@ -76,19 +77,18 @@ def create_yaml(dataset_name: str):
         "val": "val/images",
         "test": "test/images",
         "nc": 3,
-        "names": {
-            0: "Living",
-            1: "Non-Living",
-            2: "Bubble"
-        }
+        "names": {0: "Living", 1: "Non-Living", 2: "Bubble"},
     }
 
     # Write YAML with comments manually
     with open(f"{dataset_name}.yaml", "w") as yaml_file:
         # Add custom comments at the beginning
-        yaml_file.write("# https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#21-create-datasetyaml\n\n")
+        yaml_file.write(
+            "# https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#21-create-datasetyaml\n\n"
+        )
         yaml_file.write("# Paths\n")
         yaml.dump(content, yaml_file, default_flow_style=False, sort_keys=False)
+
 
 def main(
     path_labeled_dir: str,
