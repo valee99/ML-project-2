@@ -2,7 +2,6 @@ import os
 import json
 import numpy as np
 import tifffile as tiff
-from PIL import Image
 import argparse
 import cv2
 
@@ -25,6 +24,7 @@ def process_slice(
     img_height: int,
     img_width: int,
     min_surface: int,
+    task: str,
 ) -> str:
 
     slice_features = [
@@ -43,6 +43,7 @@ def process_slice(
 
             x_coords = [point[0] for point in coordinates]
             y_coords = [point[1] for point in coordinates]
+
             min_x, max_x = int(min(x_coords)), int(max(x_coords))
             min_y, max_y = int(min(y_coords)), int(max(y_coords))
 
@@ -51,9 +52,15 @@ def process_slice(
             width = (max_x - min_x) / img_width
             height = (max_y - min_y) / img_height
             if (max_x - min_x) * (max_y - min_y) >= min_surface:
-                slice_labels.append(
-                    f"{class_id} {x_center} {y_center} {width} {height}"
-                )
+                if task == "box":
+                    slice_labels.append(
+                        f"{class_id} {x_center} {y_center} {width} {height}"
+                    )
+                elif task == "seg":
+                    line = str(class_id) + " " + " ".join([f'{point[0]/img_width} {point[1]/img_height}' for point in coordinates])
+                    slice_labels.append(line)
+                else:
+                    print("Wrong task specified. Only box and seg available")
         if slice_labels != []:
             slice_labels = "\n".join(slice_labels)
         else:
@@ -115,6 +122,7 @@ def process_geojson_file(
     max_range: int,
     min_surface: int,
     preprocess: bool,
+    task: str,
 ):
     """
     Process a single geoJSON file and its corresponding .tif file.
@@ -135,16 +143,15 @@ def process_geojson_file(
     for slice_idx, slice_array in enumerate(img_stack):
         img_height, img_width = slice_array.shape
         slice_labels = process_slice(
-            slice_idx, geojson_data, class_mapping, img_height, img_width, min_surface
+            slice_idx, geojson_data, class_mapping, img_height, img_width, min_surface, task
         )
         adjust_slice_array = adjust_contrast(slice_array, min_range, max_range)
         if preprocess:
             preprocessed_array = preprocess_image(
-                adjust_slice_array, (4, 4), 1, 1, 0, 3
+                adjust_slice_array, (4, 4), 1, 1, 0, 1
             )
-            adjusted_image = Image.fromarray(preprocessed_array.astype(np.uint8))
         else:
-            adjusted_image = Image.fromarray(adjust_slice_array.astype(np.uint8))
+            preprocessed_array = adjust_slice_array.astype(np.uint8)
 
         image_path = os.path.join(
             output_label_dir,
@@ -155,7 +162,7 @@ def process_geojson_file(
             f"{file_name}_ctrst-{min_range}-{max_range}_slice-{slice_idx}.txt",
         )
 
-        adjusted_image.save(image_path)
+        cv2.imwrite(image_path, preprocessed_array)
         if slice_labels != "":
             with open(label_path, "w") as label_file:
                 label_file.write(slice_labels)
@@ -170,6 +177,7 @@ def main(
     max_range: int,
     min_surface: int,
     preprocess: bool,
+    task: str,
 ):
 
     os.makedirs(output_label_dir, exist_ok=True)
@@ -185,6 +193,7 @@ def main(
             max_range,
             min_surface,
             preprocess,
+            task,
         )
     print(f"Data saved at {output_label_dir}")
 
@@ -197,15 +206,16 @@ if __name__ == "__main__":
     )
     parser.add_argument("--path_images", type=str, default="./data/data_raw/images")
     parser.add_argument("--path_output", type=str, default="./data/data_labeled")
-    parser.add_argument("--min_contrast", type=int, default=210)
+    parser.add_argument("--min_contrast", type=int, default=0)
     parser.add_argument("--max_contrast", type=int, default=255)
-    parser.add_argument("--min_surface", type=int, default=144)
+    parser.add_argument("--min_surface", type=int, default=0)
+    parser.add_argument("--task", type=str, default="seg")
     parser.add_argument("--preprocess", action="store_true", default=False)
     args = parser.parse_args()
 
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
-    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}"
+    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}_{args.task}"
 
     main(
         args.path_images,
@@ -216,4 +226,5 @@ if __name__ == "__main__":
         args.max_contrast,
         args.min_surface,
         args.preprocess,
+        args.task,
     )
