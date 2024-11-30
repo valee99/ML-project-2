@@ -136,7 +136,7 @@ def main(path_data_train: str, task: str):
 
     for transform_name, transformation in transformations.items():
         for image_path in tqdm(images_list):
-            label_path = image_path.replace("images","labels").replace(".jpg",".txt")
+            label_path = image_path.replace("images", "labels").replace(".jpg", ".txt")
             transformed = augment_image(image_path, label_path, transformation, task)
             save_augmented(transformed, transform_name, image_path, label_path, task)
         print(f"All images transformed with {transform_name} !")

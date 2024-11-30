@@ -54,13 +54,17 @@ def filter_labels(
             points = list(map(float, label.split()[1:]))
 
             class_id = int(label[0])
-            x_coords = [int(img_width*points[i]) for i in range(len(points)) if i%2 == 0]
-            y_coords = [int(img_height*points[i]) for i in range(len(points)) if i%2 == 1]
+            x_coords = [
+                int(img_width * points[i]) for i in range(len(points)) if i % 2 == 0
+            ]
+            y_coords = [
+                int(img_height * points[i]) for i in range(len(points)) if i % 2 == 1
+            ]
 
             x_top = max(x_coords)
             x_bot = min(x_coords)
             y_right = max(y_coords)
-            y_left = max(y_coords)
+            y_left = min(y_coords)
 
             if (
                 (x_top < x_max_patch)
