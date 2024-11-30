@@ -54,11 +54,8 @@ def filter_labels(
             points = list(map(float, label.split()[1:]))
 
             class_id = int(label[0])
-            x_coords = []
-            y_coords = []
-            for i in range(len(points), 2):
-                x_coords.append(img_width * points[i])
-                y_coords.append(img_height * points[i + 1])
+            x_coords = [int(img_width*points[i]) for i in range(len(points)) if i%2 == 0]
+            y_coords = [int(img_height*points[i]) for i in range(len(points)) if i%2 == 1]
 
             x_top = max(x_coords)
             x_bot = min(x_coords)
@@ -266,7 +263,7 @@ def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str):
 
     for split in ["train", "val", "test"]:
 
-        images_path = glob(join(path_dataset), split, "images", "*.jpg")
+        images_path = glob(join(path_dataset, split, "images", "*.jpg"))
 
         for img_path in tqdm(images_path):
 

@@ -231,14 +231,17 @@ if __name__ == "__main__":
     parser.add_argument("--min_contrast", type=int, default=0)
     parser.add_argument("--max_contrast", type=int, default=255)
     parser.add_argument("--min_surface", type=int, default=0)
-    parser.add_argument("--max_surface", type=int, default=1e12)
+    parser.add_argument("--max_surface", type=int, default=np.inf)
     parser.add_argument("--task", type=str, default="seg")
     parser.add_argument("--preprocess", action="store_true", default=False)
     args = parser.parse_args()
 
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
-    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}-{args.max_surface}_prcs-{int(args.preprocess)}_{args.task}"
+    if args.max_surface < np.inf:
+        PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}-{args.max_surface}_prcs-{int(args.preprocess)}_{args.task}"
+    else:
+        PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}_{args.task}"
 
     main(
         args.path_images,
