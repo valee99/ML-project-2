@@ -4,6 +4,8 @@ from glob import glob
 import argparse
 from os.path import join
 import numpy as np
+from tqdm import tqdm
+
 
 def get_masks_from_label(label_path: str, image_path: str) -> np.array:
 
@@ -25,8 +27,12 @@ def get_masks_from_label(label_path: str, image_path: str) -> np.array:
 
         contours = [
             np.array(
-                [(int(image_width * points[i]), int(image_height * points[i + 1])) for i in range(0, len(points), 2)],
-                dtype=np.int32)
+                [
+                    (int(image_width * points[i]), int(image_height * points[i + 1]))
+                    for i in range(0, len(points), 2)
+                ],
+                dtype=np.int32,
+            )
         ]
 
         mask = np.zeros((image_height, image_width), dtype=np.uint8)
@@ -36,7 +42,10 @@ def get_masks_from_label(label_path: str, image_path: str) -> np.array:
 
     return masks, class_labels
 
-def augment_image(image_path: str, label_path: str, transform: alb.Compose, task: str) -> dict:
+
+def augment_image(
+    image_path: str, label_path: str, transform: alb.Compose, task: str
+) -> dict:
     image = cv2.imread(image_path)
     if task == "box":
         with open(label_path, "r") as label_file:
@@ -73,8 +82,10 @@ def save_augmented(
     elif task == "seg":
         masks = transformed["masks"]
         for idx, mask in enumerate(masks):
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contour = contours[0]/mask.shape[::-1]
+            contours, _ = cv2.findContours(
+                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            contour = contours[0] / mask.shape[::-1]
             str_annotation = [" ".join(point[0].astype(str)) for point in contour]
             transformed_labels.append(
                 " ".join([str(transformed_class_labels[idx])] + str_annotation)
@@ -118,9 +129,10 @@ def main(path_data_train: str, task: str):
     }
 
     for transform_name, transformation in transformations.items():
-        for image_path, label_path in zip(images_list, labels_list):
+        for image_path, label_path in tqdm(zip(images_list, labels_list)):
             transformed = augment_image(image_path, label_path, transformation, task)
             save_augmented(transformed, transform_name, image_path, label_path, task)
+        print(f"All images transformed with {transform_name} !")
 
 
 if __name__ == "__main__":

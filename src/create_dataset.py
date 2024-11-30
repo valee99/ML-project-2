@@ -6,6 +6,7 @@ from glob import glob
 from os.path import basename
 import random
 import yaml
+from tqdm import tqdm
 
 
 def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
@@ -51,7 +52,7 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
 
 def move_files(files: dict, path_labeled_dir: str, path_split_dir: str):
 
-    for split, files_list in files.items():
+    for split, files_list in tqdm(files.items()):
 
         for file_name in files_list:
 
@@ -80,14 +81,28 @@ def create_yaml(dataset_name: str):
         "names": {0: "Living", 1: "Non-Living", 2: "Bubble"},
     }
 
-    # Write YAML with comments manually
-    with open(f"{dataset_name}.yaml", "w") as yaml_file:
-        # Add custom comments at the beginning
+    augmentations = {
+        "mosaic": False,
+        "mixup": False,
+        "hsv_h": 0,
+        "hsv_s": 0,
+        "hsv_v": 0,
+        "fliplr": 0,
+        "flipud": 0,
+        "rotate": 0,
+        "scale": 0,
+        "translate": 0,
+        "cutout": False,
+    }
+
+    with open(f"configs/{dataset_name}.yaml", "w") as yaml_file:
         yaml_file.write(
             "# https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/#21-create-datasetyaml\n\n"
         )
         yaml_file.write("# Paths\n")
         yaml.dump(content, yaml_file, default_flow_style=False, sort_keys=False)
+        yaml_file.write("\naugmentation:")
+        yaml.dump(augmentations, yaml_file, default_flow_style=False, sort_keys=False)
 
 
 def main(
@@ -111,8 +126,12 @@ def main(
     files = split_files(path_labeled_dir, splits, all_slices)
 
     move_files(files, path_labeled_dir, dataset_path)
+    print(
+        f"All files divided in train/val/test splits for dataset {basename(path_labeled_dir)}"
+    )
 
     create_yaml(basename(path_labeled_dir))
+    print(f"YAML file created !")
 
 
 if __name__ == "__main__":

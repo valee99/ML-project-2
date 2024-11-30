@@ -4,6 +4,7 @@ import numpy as np
 import tifffile as tiff
 import argparse
 import cv2
+from tqdm import tqdm
 
 
 def get_geojson_files(geojson_dir: str) -> set:
@@ -24,6 +25,7 @@ def process_slice(
     img_height: int,
     img_width: int,
     min_surface: int,
+    max_surface: int,
     task: str,
 ) -> str:
 
@@ -44,20 +46,29 @@ def process_slice(
             x_coords = [point[0] for point in coordinates]
             y_coords = [point[1] for point in coordinates]
 
-            min_x, max_x = int(min(x_coords)), int(max(x_coords))
-            min_y, max_y = int(min(y_coords)), int(max(y_coords))
+            min_x, max_x = int(min(x_coords) - 39), int(max(x_coords) - 39)
+            min_y, max_y = int(min(y_coords) - 95), int(max(y_coords) - 95)
 
             x_center = (min_x + max_x) / 2 / img_width
             y_center = (min_y + max_y) / 2 / img_height
             width = (max_x - min_x) / img_width
             height = (max_y - min_y) / img_height
-            if (max_x - min_x) * (max_y - min_y) >= min_surface:
+            if max_surface > (max_x - min_x) * (max_y - min_y) >= min_surface:
                 if task == "box":
                     slice_labels.append(
                         f"{class_id} {x_center} {y_center} {width} {height}"
                     )
                 elif task == "seg":
-                    line = str(class_id) + " " + " ".join([f'{point[0]/img_width} {point[1]/img_height}' for point in coordinates])
+                    line = (
+                        str(class_id)
+                        + " "
+                        + " ".join(
+                            [
+                                f"{(point[0] - 39)/img_width} {(point[1] - 95)/img_height}"
+                                for point in coordinates
+                            ]
+                        )
+                    )
                     slice_labels.append(line)
                 else:
                     print("Wrong task specified. Only box and seg available")
@@ -121,6 +132,7 @@ def process_geojson_file(
     min_range: int,
     max_range: int,
     min_surface: int,
+    max_surface: int,
     preprocess: bool,
     task: str,
 ):
@@ -141,11 +153,19 @@ def process_geojson_file(
     # Open the .tif file and process each frame specified in the geoJSON
     img_stack = tiff.imread(tif_path)
     for slice_idx, slice_array in enumerate(img_stack):
-        img_height, img_width = slice_array.shape
+        cropped_array = slice_array[95:-137, 39:-57]
+        img_height, img_width = cropped_array.shape
         slice_labels = process_slice(
-            slice_idx, geojson_data, class_mapping, img_height, img_width, min_surface, task
+            slice_idx,
+            geojson_data,
+            class_mapping,
+            img_height,
+            img_width,
+            min_surface,
+            max_surface,
+            task,
         )
-        adjust_slice_array = adjust_contrast(slice_array, min_range, max_range)
+        adjust_slice_array = adjust_contrast(cropped_array, min_range, max_range)
         if preprocess:
             preprocessed_array = preprocess_image(
                 adjust_slice_array, (4, 4), 1, 1, 0, 1
@@ -176,13 +196,14 @@ def main(
     min_range: int,
     max_range: int,
     min_surface: int,
+    max_surface: int,
     preprocess: bool,
     task: str,
 ):
 
     os.makedirs(output_label_dir, exist_ok=True)
     geojson_files = get_geojson_files(geojson_dir)
-    for file_name in geojson_files:
+    for file_name in tqdm(geojson_files):
         process_geojson_file(
             file_name,
             tif_dir,
@@ -192,6 +213,7 @@ def main(
             min_range,
             max_range,
             min_surface,
+            max_surface,
             preprocess,
             task,
         )
@@ -209,13 +231,14 @@ if __name__ == "__main__":
     parser.add_argument("--min_contrast", type=int, default=0)
     parser.add_argument("--max_contrast", type=int, default=255)
     parser.add_argument("--min_surface", type=int, default=0)
+    parser.add_argument("--max_surface", type=int, default=1e12)
     parser.add_argument("--task", type=str, default="seg")
     parser.add_argument("--preprocess", action="store_true", default=False)
     args = parser.parse_args()
 
     CLASS_MAPPING = {"Living": 0, "Non-Living": 1, "Bubble": 2}
 
-    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}_prcs-{int(args.preprocess)}_{args.task}"
+    PATH_OUTPUT_LABELED_DIR = f"{args.path_output}/ctrst-{args.min_contrast}-{args.max_contrast}_srfc-{args.min_surface}-{args.max_surface}_prcs-{int(args.preprocess)}_{args.task}"
 
     main(
         args.path_images,
@@ -225,6 +248,7 @@ if __name__ == "__main__":
         args.min_contrast,
         args.max_contrast,
         args.min_surface,
+        args.max_surface,
         args.preprocess,
         args.task,
     )
