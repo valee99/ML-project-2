@@ -85,7 +85,14 @@ def save_augmented(
             contours, _ = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
-            contour = contours[0] / mask.shape[::-1]
+            try:
+                contour = contours[0] / mask.shape[::-1]
+            except Exception as e:
+                print(len(masks))
+                print(contours)
+                print(image_path)
+                print(label_path)
+                raise e
             str_annotation = [" ".join(point[0].astype(str)) for point in contour]
             transformed_labels.append(
                 " ".join([str(transformed_class_labels[idx])] + str_annotation)
@@ -103,7 +110,6 @@ def save_augmented(
 
 def main(path_data_train: str, task: str):
     images_list = glob(join(path_data_train, "images", "*.jpg"))
-    labels_list = glob(join(path_data_train, "labels", "*.txt"))
 
     transformations = {
         "flip_lr": alb.Compose(
@@ -129,7 +135,8 @@ def main(path_data_train: str, task: str):
     }
 
     for transform_name, transformation in transformations.items():
-        for image_path, label_path in tqdm(zip(images_list, labels_list)):
+        for image_path in tqdm(images_list):
+            label_path = image_path.replace("images","labels").replace(".jpg",".txt")
             transformed = augment_image(image_path, label_path, transformation, task)
             save_augmented(transformed, transform_name, image_path, label_path, task)
         print(f"All images transformed with {transform_name} !")

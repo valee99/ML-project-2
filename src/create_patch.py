@@ -73,7 +73,7 @@ def filter_labels(
                     + " "
                     + " ".join(
                         [
-                            f"{x/patch_width} {y/patch_height}"
+                            f"{(x - x_min_patch)/patch_width} {(y - y_min_patch)/patch_height}"
                             for x, y in zip(x_coords, y_coords)
                         ]
                     )
