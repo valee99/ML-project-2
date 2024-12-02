@@ -15,37 +15,24 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
     labels_path = glob(os.path.join(path_labeled_dir, "*.txt"))
 
     files_with_labels = [basename(path).split(".")[0] for path in labels_path]
-    files_without_labels = [
-        basename(path).split(".")[0]
-        for path in images_path
-        if basename(path).split(".")[0] not in files_with_labels
-    ]
 
     # Setting seed for reproducibility
     random.seed(42)
     random.shuffle(files_with_labels)
-    random.shuffle(files_without_labels)
+
+    n_files = len(files_with_labels)
+    train_files = files_with_labels[: int(n_files * splits["train"])]
+    val_files = files_with_labels[
+        int(n_files * splits["train"]) : int(n_files * splits["train"])
+        + int(n_files * splits["val"])
+    ]
+    test_files = files_with_labels[
+        int(n_files * splits["train"]) + int(n_files * splits["val"]) :
+    ]
 
     if all_slices:
-        files = [files_with_labels, files_without_labels]
-    else:
-        files = [files_with_labels]
-
-    train_files = []
-    val_files = []
-    test_files = []
-
-    for file_list in files:
-
-        n_files = len(file_list)
-        train_files += file_list[: int(n_files * splits["train"])]
-        val_files += file_list[
-            int(n_files * splits["train"]) : int(n_files * splits["train"])
-            + int(n_files * splits["val"])
-        ]
-        test_files += file_list[
-            int(n_files * splits["train"]) + int(n_files * splits["val"]) :
-        ]
+        img_test = list(set([file_path.split("_")[0] for file_path in test_files]))
+        test_files = [basename(path).split(".")[0] for path in images_path if basename(path).split(".")[0].split("_")[0] in img_test]
 
     return {"train": train_files, "val": val_files, "test": test_files}
 

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import os
-from os.path import join, basename
+from os.path import join, basename, exists
 from glob import glob
 import argparse
 from tqdm import tqdm
@@ -139,8 +139,12 @@ def get_patches(
     ver_border_patches = []
     ver_patches_labels = []
 
-    with open(path_label, "r") as label_file:
-        labels = label_file.readlines()
+    if exists(path_label):
+        with open(path_label, "r") as label_file:
+            labels = label_file.readlines()
+
+    else:
+        labels=[]
 
     img_height, img_width = img_array.shape
     img_height_patch, img_width_patch = (
@@ -157,23 +161,21 @@ def get_patches(
             y_half_step = int(0.5 * img_height_patch)
             x_half_step = int(0.5 * img_width_patch)
 
-            if split in ["train", "val"]:
+            update_patches(
+                reg_patches,
+                reg_patches_labels,
+                img_array,
+                labels,
+                img_height,
+                img_width,
+                y_min_patch,
+                y_max_patch,
+                x_min_patch,
+                x_max_patch,
+                task,
+            )
 
-                update_patches(
-                    reg_patches,
-                    reg_patches_labels,
-                    img_array,
-                    labels,
-                    img_height,
-                    img_width,
-                    y_min_patch,
-                    y_max_patch,
-                    x_min_patch,
-                    x_max_patch,
-                    task,
-                )
-
-            elif split == "test":
+            if split == "test":
 
                 if i < n_rows_patch - 1 and j < n_cols_patch - 1:
 
@@ -210,8 +212,8 @@ def get_patches(
                 if (j == 0 or j == n_cols_patch - 1) and i < n_rows_patch - 1:
 
                     update_patches(
-                        inter_patches,
-                        inter_patches_labels,
+                        ver_border_patches,
+                        ver_patches_labels,
                         img_array,
                         labels,
                         img_height,
@@ -227,14 +229,14 @@ def get_patches(
         return reg_patches, reg_patches_labels
 
     else:
-        test_patches = inter_patches + hor_border_patches + ver_border_patches
-        test_labels = inter_patches_labels + hor_patches_labels + ver_patches_labels
+        test_patches = reg_patches + inter_patches + hor_border_patches + ver_border_patches
+        test_labels = reg_patches_labels + inter_patches_labels + hor_patches_labels + ver_patches_labels
 
         return test_patches, test_labels
 
 
 def save_patches(
-    patches: list, labels: list, image_name: str, path_dataset: str, split: str
+    patches: list, labels: list, image_name: str, path_dataset: str, split: str, all_patches: bool,
 ):
 
     n_patches = len(patches)
@@ -242,14 +244,14 @@ def save_patches(
     for patch_idx, patch in enumerate(patches):
 
         label = labels[patch_idx]
-        if label == "":
+        if label == "" and not all_patches:
             continue
 
         label_path = join(
             path_dataset,
             split,
             "labels",
-            image_name + f"_patch-{str(patch_idx)}-{str(n_patches)}.txt",
+            image_name + f"_patch-{str(patch_idx+1)}-{str(n_patches)}.txt",
         )
         with open(label_path, "w") as label_file:
             label_file.write(label)
@@ -258,14 +260,19 @@ def save_patches(
             path_dataset,
             split,
             "images",
-            image_name + f"_patch-{str(patch_idx)}-{str(n_patches)}.jpg",
+            image_name + f"_patch-{str(patch_idx+1)}-{str(n_patches)}.jpg",
         )
         cv2.imwrite(patch_path, patch)
 
 
-def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str):
+def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str, all_patches: bool):
 
     for split in ["train", "val", "test"]:
+    
+        if split in ["train","val"]:
+            save_all_patches = all_patches
+        else:
+            save_all_patches = True
 
         images_path = glob(join(path_dataset, split, "images", "*.jpg"))
 
@@ -280,10 +287,12 @@ def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str):
                 n_rows_patch, n_cols_patch, image_array, label_path, split, task
             )
 
-            save_patches(patches, labels, image_name, path_dataset, split)
+            save_patches(patches, labels, image_name, path_dataset, split, save_all_patches)
 
             os.remove(img_path)
-            os.remove(label_path)
+
+            if exists(label_path):
+                os.remove(label_path)
 
         print(f"All patches created for {split} split !")
 
@@ -297,6 +306,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", type=str, default="seg")
     parser.add_argument("--n_rows_patch", type=int, default=7)
     parser.add_argument("--n_cols_patch", type=int, default=7)
+    parser.add_argument("--all_patches", action="store_true", default=False)
     args = parser.parse_args()
 
-    main(args.n_rows_patch + 1, args.n_cols_patch + 1, args.path_dataset, args.task)
+    main(args.n_rows_patch, args.n_cols_patch, args.path_dataset, args.task, args.all_patches)
