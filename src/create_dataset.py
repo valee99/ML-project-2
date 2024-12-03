@@ -32,7 +32,11 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
 
     if all_slices:
         img_test = list(set([file_path.split("_")[0] for file_path in test_files]))
-        test_files = [basename(path).split(".")[0] for path in images_path if basename(path).split(".")[0].split("_")[0] in img_test]
+        test_files = [
+            basename(path).split(".")[0]
+            for path in images_path
+            if basename(path).split(".")[0].split("_")[0] in img_test
+        ]
 
     return {"train": train_files, "val": val_files, "test": test_files}
 

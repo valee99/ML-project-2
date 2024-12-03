@@ -144,7 +144,7 @@ def get_patches(
             labels = label_file.readlines()
 
     else:
-        labels=[]
+        labels = []
 
     img_height, img_width = img_array.shape
     img_height_patch, img_width_patch = (
@@ -229,14 +229,26 @@ def get_patches(
         return reg_patches, reg_patches_labels
 
     else:
-        test_patches = reg_patches + inter_patches + hor_border_patches + ver_border_patches
-        test_labels = reg_patches_labels + inter_patches_labels + hor_patches_labels + ver_patches_labels
+        test_patches = (
+            reg_patches + inter_patches + hor_border_patches + ver_border_patches
+        )
+        test_labels = (
+            reg_patches_labels
+            + inter_patches_labels
+            + hor_patches_labels
+            + ver_patches_labels
+        )
 
         return test_patches, test_labels
 
 
 def save_patches(
-    patches: list, labels: list, image_name: str, path_dataset: str, split: str, all_patches: bool,
+    patches: list,
+    labels: list,
+    image_name: str,
+    path_dataset: str,
+    split: str,
+    all_patches: bool,
 ):
 
     n_patches = len(patches)
@@ -265,11 +277,17 @@ def save_patches(
         cv2.imwrite(patch_path, patch)
 
 
-def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str, all_patches: bool):
+def main(
+    n_rows_patch: int,
+    n_cols_patch: int,
+    path_dataset: str,
+    task: str,
+    all_patches: bool,
+):
 
     for split in ["train", "val", "test"]:
-    
-        if split in ["train","val"]:
+
+        if split in ["train", "val"]:
             save_all_patches = all_patches
         else:
             save_all_patches = True
@@ -287,7 +305,9 @@ def main(n_rows_patch: int, n_cols_patch: int, path_dataset: str, task: str, all
                 n_rows_patch, n_cols_patch, image_array, label_path, split, task
             )
 
-            save_patches(patches, labels, image_name, path_dataset, split, save_all_patches)
+            save_patches(
+                patches, labels, image_name, path_dataset, split, save_all_patches
+            )
 
             os.remove(img_path)
 
@@ -309,4 +329,10 @@ if __name__ == "__main__":
     parser.add_argument("--all_patches", action="store_true", default=False)
     args = parser.parse_args()
 
-    main(args.n_rows_patch, args.n_cols_patch, args.path_dataset, args.task, args.all_patches)
+    main(
+        args.n_rows_patch,
+        args.n_cols_patch,
+        args.path_dataset,
+        args.task,
+        args.all_patches,
+    )
