@@ -1,0 +1,9 @@
+numpy
+matplotlib
+opencv-python
+ipykernel
+ipywidgets
+tifffile
+albumentations
+tqdm
+ultralytics
