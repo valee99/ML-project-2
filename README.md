@@ -19,6 +19,11 @@ Copy your files to those folders:
 - `cp -r path/to/geojson/files data/data_raw/geojson_file/`
 - `cp -r path/to/tif/images data/data_raw/images/`
 
+Create a config folder that will store the YAML files to train the YOLO models:
+- `mkdir -p configs`
+
+Create a model folder that will store your models weights:
+- `mkdir -p models`
 
 ## Prepare Data
 
@@ -44,6 +49,10 @@ Add data augmentations to the training set (needed for training only):
 - `python src/augment_dataset.py --path_data_train "data/data_split/ctrst-0-255_srfc-200_prcs-0_seg_big_labels/train" --task "seg"`
 
 ## Train Models
+
+Run the training script as following:
+
+- `python src/train.py --path_model "models/yolo11n-seg.pt" --name_dataset "ctrst-0-255_srfc-200_prcs-0_seg" --epochs 100 --imgsz_small 190 --imgsz_big 1520 --batch_size 8 --workers 1 --device "0"`
 
 ## Visualise Results
 

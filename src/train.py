@@ -81,12 +81,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--path_model", type=str, default="models/yolo11/yolo11n-seg.pt"
+        "--path_model", type=str, default="models/yolo11n-seg.pt"
     )
     parser.add_argument(
         "--name_dataset", type=str, default="ctrst-0-255_srfc-200_prcs-0_seg"
     )
-    parser.add_argument("--epochs", type=int, default=0)
+    parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--imgsz_small", type=int, default=190)
     parser.add_argument("--imgsz_big", type=int, default=1520)
     parser.add_argument("--batch_size", type=int, default=8)
