@@ -54,10 +54,16 @@ Run the training script as following:
 
 - `python src/train.py --path_model "models/yolo11n-seg.pt" --name_dataset "ctrst-0-255_srfc-200_prcs-0_seg" --epochs 100 --imgsz_small 190 --imgsz_big 1520 --batch_size 8 --workers 1 --device "0"`
 
+## Predict Segmentation Masks
+
+Run the prediction script as following:
+
+- `python src/predict.py --path_images /path/to/tif/images --path_output_dir /path/to/output --n_rows_patch 8 --n_cols_patch 8 --path_model_full /path/to/weights/model/full/image --path_model_patch /path/to/weights/model/patches --min_contrast 0 --max_contrast 255`
+
 ## Visualise Results
 
 Go to `visualise.ipynb`and adapt the path to your data and models if needed.
 The weights to the models are currently saved there:
 
-- small-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-0-200_prcs-0_seg_patch_epochs-100_imgsz-190_batch-8/weights/best.pt`
-- big-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_epochs-100_imgsz-1520_batch-8/weights/best.pt`
+- small-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_small_labels_epochs-100_imgsz-190_batch-8/weights/best.pt`
+- big-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_big_labels_epochs-100_imgsz-1520_batch-8/weights/best.pt`
