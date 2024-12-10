@@ -67,3 +67,8 @@ The weights to the models are currently saved there:
 
 - small-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_small_labels_epochs-100_imgsz-190_batch-8/weights/best.pt`
 - big-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_big_labels_epochs-100_imgsz-1520_batch-8/weights/best.pt`
+
+### Examples of outputs
+
+![Combined Masks](combined_masks_output_example.png)
+![Combined Segmentations](combined_segmentations_output_example.png)
