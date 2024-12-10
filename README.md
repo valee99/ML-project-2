@@ -24,26 +24,24 @@ Copy your files to those folders:
 
 For each script, the arguments given are those used to obtain the best performances.
 
-Load the raw data and format it for the task and divide it into two datasets, one for "small" objects and one for "big" objects:
+Load the raw data and format it for the task and divide it into two datasets, one for "small" objects and one for "big" objects. Choose the threshold between "small" and "big" objects with the argument "split_value_surface" based on the area of the bounding box of the object:
 
-- `python src/load_from_raw.py --path_geojson "./data/data_raw/geojson_file" --path_images "./data/data_raw/images" --path_output "./data/data_labeled" --min_contrast 0 --max_contrast 255 --min_surface 200 --task "seg"`
-- `python src/load_from_raw.py --path_geojson "./data/data_raw/geojson_file" --path_images "./data/data_raw/images" --path_output "./data/data_labeled" --min_contrast 0 --max_contrast 255 --min_surface 0 --max_surface 200 --task "seg"`
+- `python src/load_from_raw.py --path_geojson "./data/data_raw/geojson_file" --path_images "./data/data_raw/images" --path_output "./data/data_labeled" --min_contrast 0 --max_contrast 255 --split_value_surface 200 --task "seg"`
 
 Then create the dataset:
 
 - `python src/create_dataset.py --path_labeled "./data/data_labeled/ctrst-0-255_srfc-200_prcs-0_seg" --path_split "./data/data_split" --train_ratio 0.7 --val_ratio 0.2 --test_ratio 0.1 --all_slices`
-- `python src/create_dataset.py --path_labeled "./data/data_labeled/ctrst-0-255_srfc-0-200_prcs-0_seg" --path_split "./data/data_split" --train_ratio 0.7 --val_ratio 0.2 --test_ratio 0.1 --all_slices`
 
 The argument `--all_slices` is used to save all slices from the images in the test set in order to make predictions on all the slice when visualising the results at the end. 
 
 Create the patches needed for the small-objects model:
 
-- `python src/create_patch.py --path_dataset "data/data_split/ctrst-0-255_srfc-0-200_prcs-0_seg" --task "seg" --n_rows_patch 8 --n_cols_patch 8`
+- `python src/create_patch.py --path_dataset "data/data_split/ctrst-0-255_srfc-200_prcs-0_seg_small_labels" --task "seg" --n_rows_patch 8 --n_cols_patch 8`
 
 Add data augmentations to the training set (needed for training only):
 
-- `python src/augment_dataset.py --path_data_train "data/data_split/ctrst-0-255_srfc-0-200_prcs-0_seg/train" --task "seg"`
-- `python src/augment_dataset.py --path_data_train "data/data_split/ctrst-0-255_srfc-200_prcs-0_seg/train" --task "seg"`
+- `python src/augment_dataset.py --path_data_train "data/data_split/ctrst-0-255_srfc-200_prcs-0_seg_small_labels/train" --task "seg"`
+- `python src/augment_dataset.py --path_data_train "data/data_split/ctrst-0-255_srfc-200_prcs-0_seg_big_labels/train" --task "seg"`
 
 ## Train Models
 

@@ -5,6 +5,7 @@ from os.path import join, basename, exists
 from glob import glob
 import argparse
 from tqdm import tqdm
+import warnings
 
 
 def filter_labels(
@@ -378,6 +379,21 @@ def main(
         task: a string denoting the chosen task between object detection "box" or instance segmentation "seg"
         all_patches: a boolean denoting if all patches need to be saved
     """
+    if task not in ["box", "seg"]:
+        raise ValueError(f"Wrong task specified : {task}. Only box and seg available.")
+    if not exists(path_dataset):
+        raise ValueError(
+            f"{path_dataset} provided for dataset directory path does not exist"
+        )
+    if n_rows_patch <= 0 or n_cols_patch <= 0:
+        raise ValueError(
+            f"{(n_rows_patch,n_cols_patch)} provided for number of rows and columns of patch. A strictly positive number of rows and columns is needed"
+        )
+    if n_rows_patch == 1 and n_cols_patch == 1:
+        warnings.warn(
+            "Only 1 row and 1 column of patch won't change the original image",
+            UserWarning,
+        )
     # Iterate through the splits
     for split in ["train", "val", "test"]:
 
