@@ -197,7 +197,7 @@ def main(
 
     for label_type in ["big_labels", "small_labels"]:
         dataset_path = join(
-            path_split_dir, basename(path_labeled_dir + "_" + label_type)
+            path_split_dir, basename(path_labeled_dir)+ "_" + label_type
         )
         os.makedirs(dataset_path, exist_ok=True)
 
@@ -207,12 +207,12 @@ def main(
                 os.makedirs(join(dataset_path, split, "images"), exist_ok=True)
                 os.makedirs(join(dataset_path, split, "labels"), exist_ok=True)
 
-        create_yaml(basename(path_labeled_dir + "_" + label_type))
+        create_yaml(basename(path_labeled_dir) + "_" + label_type)
         print(f"YAML file created !")
 
         move_files(files, path_labeled_dir, dataset_path, label_type)
         print(
-            f"All files divided in train/val/test splits for dataset {basename(path_labeled_dir+"_"+label_type)}"
+            f"All files divided in train/val/test splits for dataset {basename(path_labeled_dir)+"_"+label_type}"
         )
 
 
