@@ -72,3 +72,9 @@ The weights to the models are currently saved there:
 
 ![Combined Masks](combined_masks_output_example.png)
 ![Combined Segmentations](combined_segmentations_output_example.png)
+
+## Team Components
+For any question and/or curiosity, feel free to reach
+* [Valentin Aolaritei](mailto:valentin.aolaritei@epfl.ch)
+* [Alberto De Laurentis](mailto:alberto.delaurentis@epfl.ch)
+* [Martin Louis Le Bras](mailto:martin.lebras@epfl.ch)
