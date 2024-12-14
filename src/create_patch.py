@@ -346,7 +346,7 @@ def save_patches(
             path_dataset,
             split,
             "labels",
-            image_name + f"_patch-{str(patch_idx+1)}-{str(n_patches)}.txt",
+            f"{image_name}_patch-{str(patch_idx+1)}-{str(n_patches)}.txt",
         )
         # Save patch label
         with open(label_path, "w") as label_file:
@@ -357,7 +357,7 @@ def save_patches(
             path_dataset,
             split,
             "images",
-            image_name + f"_patch-{str(patch_idx+1)}-{str(n_patches)}.jpg",
+            f"{image_name}_patch-{str(patch_idx+1)}-{str(n_patches)}.jpg",
         )
         # Save patch image
         cv2.imwrite(patch_path, patch)
@@ -443,8 +443,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path_dataset", type=str)
     parser.add_argument("--task", type=str, default="seg")
-    parser.add_argument("--n_rows_patch", type=int, default=7)
-    parser.add_argument("--n_cols_patch", type=int, default=7)
+    parser.add_argument("--n_rows_patch", type=int, default=8)
+    parser.add_argument("--n_cols_patch", type=int, default=8)
     parser.add_argument("--all_patches", action="store_true", default=False)
     args = parser.parse_args()
 

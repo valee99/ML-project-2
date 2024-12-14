@@ -213,7 +213,7 @@ def process_geojson_file(
 
     # Check if the corresponding .tif file exists
     if not os.path.exists(tif_path):
-        raise (f"Error: `{tif_path}` file not found.")
+        raise ValueError(f"`{tif_path}` file not found.")
 
     # Load geoJSON data
     with open(geojson_path, "r") as file:
