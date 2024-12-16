@@ -28,10 +28,10 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
     labels_small_path = glob(join(path_labeled_dir, "small_labels", "*.txt"))
 
     # Retrieve the individual images with small and big objects labels
-    images_with_big_labels = [basename(path).split("_")[0] for path in labels_big_path]
-    images_with_small_labels = [
+    images_with_big_labels = list(set([basename(path).split("_")[0] for path in labels_big_path]))
+    images_with_small_labels = list(set([
         basename(path).split("_")[0] for path in labels_small_path
-    ]
+    ]))
 
     # Select if the split will be done on the small or big objects dataset
     if len(images_with_big_labels) > len(images_with_small_labels):
@@ -45,12 +45,16 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
 
     # Setting seed for reproducibility
     random.seed(42)
-    random.shuffle(images_list)
+    random.shuffle(sorted(images_list))
 
     # Split the images across the train/val/test splits
     train_images = images_list[:n_images_train]
     val_images = images_list[n_images_train : n_images_train + n_images_val]
     test_images = images_list[n_images_train + n_images_val :]
+
+    print("Images used for training : ",train_images)
+    print("Images used for validation : ",val_images)
+    print("Images used for testing : ",test_images)
 
     # Retrieve the file names from the chosen images
     train_files = [
@@ -113,13 +117,18 @@ def move_files(
 
             image_file = join(path_labeled_dir, "images", file_name + ".jpg")
             split_image_file = join(path_split_dir, split, "images", file_name + ".jpg")
-            shutil.copy(image_file, split_image_file)
 
             label_file = join(path_labeled_dir, label_type, file_name + ".txt")
             split_label_file = join(path_split_dir, split, "labels", file_name + ".txt")
-
-            if os.path.exists(label_file):
-                shutil.copy(label_file, split_label_file)
+            if split != "test":
+                if os.path.exists(label_file):
+                    shutil.copy(image_file, split_image_file)
+                    shutil.copy(label_file, split_label_file)
+            else:
+                shutil.copy(image_file, split_image_file)
+                if os.path.exists(label_file):
+                    shutil.copy(label_file, split_label_file)
+                
 
 
 def create_yaml(dataset_name: str):
@@ -192,6 +201,8 @@ def main(
         raise ValueError(
             f"{train_ratio} provided for train_ratio. This value must be strictly positive."
         )
+    
+    splits = {"train": train_ratio, "val": val_ratio, "test": test_ratio}
 
     files = split_files(path_labeled_dir, splits, all_slices)
 
@@ -201,7 +212,6 @@ def main(
         )
         os.makedirs(dataset_path, exist_ok=True)
 
-        splits = {"train": train_ratio, "val": val_ratio, "test": test_ratio}
         for split, ratio in splits.items():
             if ratio > 0:
                 os.makedirs(join(dataset_path, split, "images"), exist_ok=True)
