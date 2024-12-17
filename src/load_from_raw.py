@@ -247,7 +247,8 @@ def process_geojson_file(
 
         # Create the final path for the slice and the corresponding labels
         image_path = join(
-            dirname(output_label_dir),"images",
+            dirname(output_label_dir),
+            "images",
             f"{file_name}_ctrst-{min_range}-{max_range}_slice-{slice_idx}.jpg",
         )
         label_path = join(
@@ -308,16 +309,16 @@ def main(
             f"{geojson_dir} provided for GeoJSON directory path does not exist"
         )
     os.makedirs(output_label_dir, exist_ok=True)
-    os.makedirs(join(output_label_dir,"small_labels"),exist_ok=True)
-    os.makedirs(join(output_label_dir,"big_labels"),exist_ok=True)
-    os.makedirs(join(output_label_dir,"images"),exist_ok=True)
+    os.makedirs(join(output_label_dir, "small_labels"), exist_ok=True)
+    os.makedirs(join(output_label_dir, "big_labels"), exist_ok=True)
+    os.makedirs(join(output_label_dir, "images"), exist_ok=True)
     geojson_files = get_geojson_files(geojson_dir)
     for file_name in tqdm(geojson_files):
         process_geojson_file(
             file_name,
             tif_dir,
             geojson_dir,
-            join(output_label_dir,"big_labels"),
+            join(output_label_dir, "big_labels"),
             class_mapping,
             min_range,
             max_range,
@@ -331,7 +332,7 @@ def main(
             file_name,
             tif_dir,
             geojson_dir,
-            join(output_label_dir,"small_labels"),
+            join(output_label_dir, "small_labels"),
             class_mapping,
             min_range,
             max_range,

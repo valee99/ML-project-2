@@ -54,15 +54,21 @@ Run the training script as following:
 
 - `python src/train.py --path_model "models/yolo11n-seg.pt" --name_dataset "ctrst-0-255_srfc-200_prcs-0_seg" --epochs 100 --imgsz_small 190 --imgsz_big 1520 --batch_size 8 --workers 1 --device "0"`
 
+## Evaluate Models
+
+Run the evaluation script as following to know the performance of your model on the test set given the initial annotations:
+
+- `python src/evaluate.py --path_labeled_folder /path/to/original/test/labels --path_model_full /path/to/weights/model/full/image --path_dataset_full /path/to/test/images/full --path_model_patch /path/to/weights/model/patch/image --path_dataset_patch /path/to/test/images/patches --use_patch --n_rows_patch 8 --n_cols_patch 8`
+
 ## Predict Segmentation Masks
 
 Run the prediction script as following:
 
-- `python src/predict.py --path_images /path/to/tif/images --path_output_dir /path/to/output --n_rows_patch 8 --n_cols_patch 8 --path_model_full /path/to/weights/model/full/image --path_model_patch /path/to/weights/model/patches --min_contrast 0 --max_contrast 255`
+- `python src/predict.py --path_images /path/to/tif/images --path_output_dir /path/to/output --n_rows_patch 8 --n_cols_patch 8 --path_model_full /path/to/weights/model/full/image --path_model_patch /path/to/weights/model/patches --min_contrast 0 --max_contrast 255 --use_patch`
 
 ## Visualise Results
 
-Go to `visualise.ipynb`and adapt the path to your data and models if needed.
+If you want an interactive view of the results go to `visualise.ipynb`and adapt the path to your data and models if needed.
 The weights to the models are currently saved there:
 
 - small-objects model : `runs/segmentation/yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_small_labels_epochs-100_imgsz-190_batch-8/weights/best.pt`
@@ -75,6 +81,6 @@ The weights to the models are currently saved there:
 
 ## Team Components
 For any question and/or curiosity, feel free to reach
+* [Martin Louis Le Bras](mailto:martin.lebras@epfl.ch)
 * [Valentin Aolaritei](mailto:valentin.aolaritei@epfl.ch)
 * [Alberto De Laurentis](mailto:alberto.delaurentis@epfl.ch)
-* [Martin Louis Le Bras](mailto:martin.lebras@epfl.ch)

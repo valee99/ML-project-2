@@ -28,10 +28,12 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
     labels_small_path = glob(join(path_labeled_dir, "small_labels", "*.txt"))
 
     # Retrieve the individual images with small and big objects labels
-    images_with_big_labels = list(set([basename(path).split("_")[0] for path in labels_big_path]))
-    images_with_small_labels = list(set([
-        basename(path).split("_")[0] for path in labels_small_path
-    ]))
+    images_with_big_labels = list(
+        set([basename(path).split("_")[0] for path in labels_big_path])
+    )
+    images_with_small_labels = list(
+        set([basename(path).split("_")[0] for path in labels_small_path])
+    )
 
     # Select if the split will be done on the small or big objects dataset
     if len(images_with_big_labels) > len(images_with_small_labels):
@@ -52,9 +54,9 @@ def split_files(path_labeled_dir: str, splits: dict, all_slices: bool) -> dict:
     val_images = images_list[n_images_train : n_images_train + n_images_val]
     test_images = images_list[n_images_train + n_images_val :]
 
-    print("Images used for training : ",train_images)
-    print("Images used for validation : ",val_images)
-    print("Images used for testing : ",test_images)
+    print("Images used for training : ", train_images)
+    print("Images used for validation : ", val_images)
+    print("Images used for testing : ", test_images)
 
     # Retrieve the file names from the chosen images
     train_files = [
@@ -128,7 +130,6 @@ def move_files(
                 shutil.copy(image_file, split_image_file)
                 if os.path.exists(label_file):
                     shutil.copy(label_file, split_label_file)
-                
 
 
 def create_yaml(dataset_name: str):
@@ -201,14 +202,14 @@ def main(
         raise ValueError(
             f"{train_ratio} provided for train_ratio. This value must be strictly positive."
         )
-    
+
     splits = {"train": train_ratio, "val": val_ratio, "test": test_ratio}
 
     files = split_files(path_labeled_dir, splits, all_slices)
 
     for label_type in ["big_labels", "small_labels"]:
         dataset_path = join(
-            path_split_dir, basename(path_labeled_dir)+ "_" + label_type
+            path_split_dir, basename(path_labeled_dir) + "_" + label_type
         )
         os.makedirs(dataset_path, exist_ok=True)
 

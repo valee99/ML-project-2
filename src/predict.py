@@ -263,6 +263,7 @@ def combine_mask_models(mask_model_a: np.array, mask_model_b: np.array) -> np.ar
 
     return np.maximum(mask_model_a, mask_model_b)
 
+
 def normalized_variance_focus(img: np.array) -> float:
     """Computes the Normalized Variance of an image to measure the focus
 
@@ -278,11 +279,14 @@ def normalized_variance_focus(img: np.array) -> float:
     width = img.shape[1]
     for i in range(height):
         for j in range(width):
-            var += (img[i,j] - img_mean)**2
-    normalized_variance = var/(img_mean*height*width)
+            var += (img[i, j] - img_mean) ** 2
+    normalized_variance = var / (img_mean * height * width)
     return normalized_variance
 
-def select_slices_for_output(full_mask: np.array, full_img: np.array) -> tuple[np.array]:
+
+def select_slices_for_output(
+    full_mask: np.array, full_img: np.array
+) -> tuple[np.array]:
     """Selects the best in-focus slice for each object segmented across more than one slice using Normalized Variance
 
     Arguments:
@@ -298,33 +302,51 @@ def select_slices_for_output(full_mask: np.array, full_img: np.array) -> tuple[n
     final_mask = np.zeros_like(label_im[0])
     final_img = np.ones_like(label_im[0]) * 255
 
-    for i in tqdm(range(1,nb_labels)):
+    for i in tqdm(range(1, nb_labels)):
 
-        connected_comp = np.where(label_im==i,1,0)
+        connected_comp = np.where(label_im == i, 1, 0)
 
         indices = np.argwhere(connected_comp)
 
-        z_min = indices[:,0].min()
-        z_max = indices[:,0].max()
+        z_min = indices[:, 0].min()
+        z_max = indices[:, 0].max()
 
-        y_min = indices[:,1].min()
-        y_max = indices[:,1].max()
+        y_min = indices[:, 1].min()
+        y_max = indices[:, 1].max()
 
-        x_min = indices[:,2].min()
-        x_max = indices[:,2].max()
+        x_min = indices[:, 2].min()
+        x_max = indices[:, 2].max()
 
         if z_min == z_max:
-            final_mask[y_min:y_max+1,x_min:x_max+1] = np.where(connected_comp[z_min,y_min:y_max+1,x_min:x_max+1]==1,z_min,0)
-            final_img[y_min:y_max+1,x_min:x_max+1] = np.where(connected_comp[z_min,y_min:y_max+1,x_min:x_max+1]==1,full_img[z_min,y_min:y_max+1,x_min:x_max+1],final_img[y_min:y_max+1,x_min:x_max+1])
+            final_mask[y_min : y_max + 1, x_min : x_max + 1] = np.where(
+                connected_comp[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                z_min,
+                0,
+            )
+            final_img[y_min : y_max + 1, x_min : x_max + 1] = np.where(
+                connected_comp[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                full_img[z_min, y_min : y_max + 1, x_min : x_max + 1],
+                final_img[y_min : y_max + 1, x_min : x_max + 1],
+            )
 
         else:
-            selected_array = label_im[z_min:z_max+1,y_min:y_max+1,x_min:x_max+1]
+            selected_array = label_im[
+                z_min : z_max + 1, y_min : y_max + 1, x_min : x_max + 1
+            ]
             norm_v = []
             for slice in selected_array:
                 norm_v.append(normalized_variance_focus(slice))
             z_to_keep = z_min + np.argmax(norm_v)
-            final_mask[y_min:y_max+1,x_min:x_max+1] = np.where(connected_comp[z_to_keep,y_min:y_max+1,x_min:x_max+1]==1,z_to_keep,0)
-            final_img[y_min:y_max+1,x_min:x_max+1] = np.where(connected_comp[z_to_keep,y_min:y_max+1,x_min:x_max+1]==1,full_img[z_to_keep,y_min:y_max+1,x_min:x_max+1],final_img[y_min:y_max+1,x_min:x_max+1])
+            final_mask[y_min : y_max + 1, x_min : x_max + 1] = np.where(
+                connected_comp[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                z_to_keep,
+                0,
+            )
+            final_img[y_min : y_max + 1, x_min : x_max + 1] = np.where(
+                connected_comp[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                full_img[z_to_keep, y_min : y_max + 1, x_min : x_max + 1],
+                final_img[y_min : y_max + 1, x_min : x_max + 1],
+            )
 
     return final_mask, final_img
 
@@ -362,7 +384,12 @@ def predict_image(
         n_hor_patches = 2 * (n_cols_patch - 1)
         n_ver_patches = 2 * (n_rows_patch - 1)
         # Set the dictionary with the number of each kind of patch
-        n_patches = {"reg":n_reg_patches,"inter":n_inter_patches,"hor":n_hor_patches,"ver":n_ver_patches}
+        n_patches = {
+            "reg": n_reg_patches,
+            "inter": n_inter_patches,
+            "hor": n_hor_patches,
+            "ver": n_ver_patches,
+        }
 
     img_mask = []
     big_model_img_mask = []
@@ -385,7 +412,8 @@ def predict_image(
             # Retrieve the paths to the patches of the slice
             path_patches_slice = glob(
                 join(
-                    path_dataset_patch_images, basename(slice_path).split(".")[0] + "_*.jpg"
+                    path_dataset_patch_images,
+                    basename(slice_path).split(".")[0] + "_*.jpg",
                 )
             )
             # Sort the patches
@@ -440,14 +468,22 @@ def predict_image(
     return img_mask, img, big_model_img_mask, small_model_img_mask
 
 
-def save_outputs(img_mask: list, img: list, small_model_img_mask: list, big_model_img_mask: list, img_name: str, path_output_dir: str, use_patch: bool):
+def save_outputs(
+    img_mask: list,
+    img: list,
+    small_model_img_mask: list,
+    big_model_img_mask: list,
+    img_name: str,
+    path_output_dir: str,
+    use_patch: bool,
+):
     """Saves the outputs of the segmentation masks
 
     Arguments:
         img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of each slice of the image
         img: a list of the numpy arrays of shape (image_height, image_width) for each slice of the image
-        big_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of big objects of each slice 
-        small_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of small objects of each slice 
+        big_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of big objects of each slice
+        small_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of small objects of each slice
         img_name: a string denoting the name of the image
         path_output_dir: a string denoting the path to the output directory
         use_patch: a boolean denoting if a patch model is used
@@ -459,14 +495,28 @@ def save_outputs(img_mask: list, img: list, small_model_img_mask: list, big_mode
     if use_patch:
         all_slices_small_model = np.array(small_model_img_mask)
         all_slices_big_model = np.array(big_model_img_mask)
-        combined_slices_big_model, combined_images_big_model = select_slices_for_output(all_slices_big_model, all_images)
-        combined_slices_small_model, combined_images_small_model = select_slices_for_output(all_slices_small_model, all_images)
-        
-        combined_slices = np.where(combined_slices_small_model > 0, combined_slices_small_model, combined_slices_big_model)
-        combined_images = np.where(combined_slices_small_model > 0, combined_images_small_model, combined_images_big_model)
+        combined_slices_big_model, combined_images_big_model = select_slices_for_output(
+            all_slices_big_model, all_images
+        )
+        combined_slices_small_model, combined_images_small_model = (
+            select_slices_for_output(all_slices_small_model, all_images)
+        )
+
+        combined_slices = np.where(
+            combined_slices_small_model > 0,
+            combined_slices_small_model,
+            combined_slices_big_model,
+        )
+        combined_images = np.where(
+            combined_slices_small_model > 0,
+            combined_images_small_model,
+            combined_images_big_model,
+        )
     else:
         # Aggregate the masks and the segmented images in a single slice
-        combined_slices, combined_images = select_slices_for_output(all_slices, all_images)
+        combined_slices, combined_images = select_slices_for_output(
+            all_slices, all_images
+        )
 
     # Create the necessary directories in the output folder
     os.makedirs(join(path_output_dir, img_name), exist_ok=True)
@@ -582,7 +632,15 @@ def predict_image_from_raw(
         use_patch,
     )
     # Create and save the outputs from the segmentation mask of the image
-    save_outputs(img_mask, img, small_model_img_mask, big_model_img_mask, img_name, path_output_dir, use_patch)
+    save_outputs(
+        img_mask,
+        img,
+        small_model_img_mask,
+        big_model_img_mask,
+        img_name,
+        path_output_dir,
+        use_patch,
+    )
 
 
 def main(
@@ -595,7 +653,7 @@ def main(
     preprocess: bool,
     min_range: int,
     max_range: int,
-    use_patch: bool
+    use_patch: bool,
 ):
     """Main function to predict the segmentation masks of images located in a given directory
 
@@ -686,5 +744,5 @@ if __name__ == "__main__":
         args.preprocess,
         args.min_contrast,
         args.max_contrast,
-        args.use_patch
+        args.use_patch,
     )

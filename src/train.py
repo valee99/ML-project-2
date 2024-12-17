@@ -80,9 +80,7 @@ def main(
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--path_model", type=str, default="models/yolo11n-seg.pt"
-    )
+    parser.add_argument("--path_model", type=str, default="models/yolo11n-seg.pt")
     parser.add_argument(
         "--name_dataset", type=str, default="ctrst-0-255_srfc-200_prcs-0_seg"
     )
