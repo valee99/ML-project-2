@@ -11,7 +11,7 @@ import warnings
 import tifffile as tiff
 from load_from_raw import adjust_contrast, preprocess_image
 import shutil
-from scipy import ndimage
+from scipy.ndimage import label, binary_fill_holes
 
 
 def get_patches_images_only(
@@ -293,7 +293,7 @@ def select_slices_for_output(full_mask: np.array, full_img: np.array) -> tuple[n
         final_mask: a numpy array of shape (image_height, image_width) combining the best in-focus mask for each detected object
         final_img: a numpy array of shape (image_height, image_width) combining the best in-focus segmentation for each detected object
     """
-    label_im, nb_labels = ndimage.label(full_mask)
+    label_im, nb_labels = label(full_mask)
 
     final_mask = np.zeros_like(label_im[0])
     final_img = np.ones_like(label_im[0]) * 255
@@ -337,6 +337,7 @@ def predict_image(
     path_model_full: str,
     path_model_patch: str,
     img_name: str,
+    use_patch: bool,
 ) -> tuple[list, list]:
     """Predicts the segmentation masks for each slice of an image
 
@@ -348,27 +349,25 @@ def predict_image(
         path_model_full: a string denoting the path to the weights of the model to segment the full image
         path_model_patch: a string denoting the path to the weights of the model to segment the patches
         img_name: a string denoting the name of the image
+        use_patch: a boolean denoting if a patch model is used
 
     Returns:
         img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of each slice of the image
         img: a list of the numpy arrays of shape (image_height, image_width) for each slice of the image
     """
     # Get the number of each kind of patch based on the number of rows and columns of patch
-    n_reg_patches = n_rows_patch * n_cols_patch
-    n_inter_patches = (n_rows_patch - 1) * (n_cols_patch - 1)
-    n_hor_patches = 2 * (n_cols_patch - 1)
-    n_ver_patches = 2 * (n_rows_patch - 1)
+    if use_patch:
+        n_reg_patches = n_rows_patch * n_cols_patch
+        n_inter_patches = (n_rows_patch - 1) * (n_cols_patch - 1)
+        n_hor_patches = 2 * (n_cols_patch - 1)
+        n_ver_patches = 2 * (n_rows_patch - 1)
+        # Set the dictionary with the number of each kind of patch
+        n_patches = {"reg":n_reg_patches,"inter":n_inter_patches,"hor":n_hor_patches,"ver":n_ver_patches}
 
     img_mask = []
+    big_model_img_mask = []
+    small_model_img_mask = []
     img = []
-
-    # Set the dictionary with the number of each kind of patch
-    n_patches = {
-        "reg": n_reg_patches,
-        "inter": n_inter_patches,
-        "hor": n_hor_patches,
-        "ver": n_ver_patches,
-    }
 
     # Retrieve the paths to the slices of the image
     path_slices_full_image = glob(join(path_dataset_full_images, img_name + "*.jpg"))
@@ -382,72 +381,92 @@ def predict_image(
     # Iterate through the slices of the image
     for slice_idx, slice_path in tqdm(enumerate(path_slices_full_image_sorted)):
 
-        # Retrieve the paths to the patches of the slice
-        path_patches_slice = glob(
-            join(
-                path_dataset_patch_images, basename(slice_path).split(".")[0] + "_*.jpg"
+        if use_patch:
+            # Retrieve the paths to the patches of the slice
+            path_patches_slice = glob(
+                join(
+                    path_dataset_patch_images, basename(slice_path).split(".")[0] + "_*.jpg"
+                )
             )
-        )
-        # Sort the patches
-        path_patches_sorted = [0] * len(path_patches_slice)
-        for img_path in path_patches_slice:
-            patch_idx = basename(img_path).split(".")[0].split("-")[-2]
-            path_patches_sorted[int(patch_idx) - 1] = img_path
+            # Sort the patches
+            path_patches_sorted = [0] * len(path_patches_slice)
+            for img_path in path_patches_slice:
+                patch_idx = basename(img_path).split(".")[0].split("-")[-2]
+                path_patches_sorted[int(patch_idx) - 1] = img_path
 
         # Open the full slice
         full_image = cv2.imread(slice_path, cv2.IMREAD_GRAYSCALE)
 
         # Get the dimensions of the full image and the patches
         image_height, image_width = full_image.shape
-        patch_height, patch_width = (
-            image_height // n_rows_patch,
-            image_width // n_cols_patch,
-        )
+        if use_patch:
+            patch_height, patch_width = (
+                image_height // n_rows_patch,
+                image_width // n_cols_patch,
+            )
 
         # Get the segmentation masks of the full image and each patch
         image_mask = get_masks(
             path_model_full, [slice_path], image_height, image_width
         )[0]
-        patches_masks = get_masks(
-            path_model_patch, path_patches_sorted, patch_height, patch_width
-        )
+        image_mask = binary_fill_holes(image_mask).astype(int)
+        big_model_img_mask.append(image_mask)
+        if use_patch:
+            patches_masks = get_masks(
+                path_model_patch, path_patches_sorted, patch_height, patch_width
+            )
 
-        # Combine the masks of the patches
-        combined_patches_masks = combine_mask_patches(
-            patches_masks,
-            n_patches,
-            n_rows_patch,
-            n_cols_patch,
-            (image_height, image_width),
-        )
-        del patches_masks
+            # Combine the masks of the patches
+            combined_patches_masks = combine_mask_patches(
+                patches_masks,
+                n_patches,
+                n_rows_patch,
+                n_cols_patch,
+                (image_height, image_width),
+            )
+            del patches_masks
+            small_model_img_mask.append(combined_patches_masks)
+            # Combine the masks of the patches and the mask of the full image
+            final_mask = combine_mask_models(image_mask, combined_patches_masks)
+            del image_mask, combined_patches_masks
 
-        # Combine the masks of the patches and the mask of the full image
-        final_mask = combine_mask_models(image_mask, combined_patches_masks)
-        del image_mask, combined_patches_masks
+        else:
+            final_mask = image_mask.copy()
 
         # Add the final mask and the slice to their respective lists
         img_mask.append(final_mask)
         img.append(full_image)
 
-    return img_mask, img
+    return img_mask, img, big_model_img_mask, small_model_img_mask
 
 
-def save_outputs(img_mask: list, img: list, img_name: str, path_output_dir: str):
+def save_outputs(img_mask: list, img: list, small_model_img_mask: list, big_model_img_mask: list, img_name: str, path_output_dir: str, use_patch: bool):
     """Saves the outputs of the segmentation masks
 
     Arguments:
         img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of each slice of the image
         img: a list of the numpy arrays of shape (image_height, image_width) for each slice of the image
+        big_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of big objects of each slice 
+        small_model_img_mask: a list of the numpy arrays of shape (image_height, image_width) for the mask of small objects of each slice 
         img_name: a string denoting the name of the image
         path_output_dir: a string denoting the path to the output directory
+        use_patch: a boolean denoting if a patch model is used
     """
     # Combine all masks and all slices in a single array of shape (n_slices, image_height, image_width)
     all_slices = np.array(img_mask)
     all_images = np.array(img)
-    
-    # Aggregate the masks and the segmented images in a single slice
-    combined_slices, combined_images = select_slices_for_output(all_slices, all_images)
+
+    if use_patch:
+        all_slices_small_model = np.array(small_model_img_mask)
+        all_slices_big_model = np.array(big_model_img_mask)
+        combined_slices_big_model, combined_images_big_model = select_slices_for_output(all_slices_big_model, all_images)
+        combined_slices_small_model, combined_images_small_model = select_slices_for_output(all_slices_small_model, all_images)
+        
+        combined_slices = np.where(combined_slices_small_model > 0, combined_slices_small_model, combined_slices_big_model)
+        combined_images = np.where(combined_slices_small_model > 0, combined_images_small_model, combined_images_big_model)
+    else:
+        # Aggregate the masks and the segmented images in a single slice
+        combined_slices, combined_images = select_slices_for_output(all_slices, all_images)
 
     # Create the necessary directories in the output folder
     os.makedirs(join(path_output_dir, img_name), exist_ok=True)
@@ -460,7 +479,7 @@ def save_outputs(img_mask: list, img: list, img_name: str, path_output_dir: str)
             join(path_output_dir, img_name, "slices", f"{img_name}_slice_{i}_mask.jpg"),
             all_slices[i],
         )
-        segmented_image = np.where(all_slices[i] == 255, all_images[i], 255)
+        segmented_image = np.where(all_slices[i] == 1, all_images[i], 255)
         # Save the current slice's segmentation
         cv2.imwrite(
             join(
@@ -490,6 +509,7 @@ def predict_image_from_raw(
     path_model_full: str,
     path_model_patch: str,
     path_output_dir: str,
+    use_patch: bool,
 ):
     """Predict the segmentation masks of an image from the raw .tif file
 
@@ -503,6 +523,7 @@ def predict_image_from_raw(
         path_model_full: a string denoting the path to the weights of the model to segment the full image
         path_model_patch: a string denoting the path to the weights of the model to segment the patches
         path_output_dir: a string denoting the path to the output directory
+        use_patch: a boolean denoting if a patch model is used
     """
     # Open the original tif file
     img_stack = tiff.imread(image_path)
@@ -529,27 +550,28 @@ def predict_image_from_raw(
         )
         cv2.imwrite(image_path, preprocessed_array)
 
-        # Get the patches of the slice
-        patches = get_patches_images_only(
-            n_rows_patch,
-            n_cols_patch,
-            preprocessed_array,
-        )
-
-        n_patches = len(patches)
-
-        # Iterate through the patches
-        for patch_idx in range(n_patches):
-            # Save the patch to the temporary directory
-            patch_path = join(
-                "temp",
-                "patches",
-                f"{img_name}_slice-{slice_idx}_patch-{str(patch_idx+1)}-{str(n_patches)}.jpg",
+        if use_patch:
+            # Get the patches of the slice
+            patches = get_patches_images_only(
+                n_rows_patch,
+                n_cols_patch,
+                preprocessed_array,
             )
-            cv2.imwrite(patch_path, patches[patch_idx])
+
+            n_patches = len(patches)
+
+            # Iterate through the patches
+            for patch_idx in range(n_patches):
+                # Save the patch to the temporary directory
+                patch_path = join(
+                    "temp",
+                    "patches",
+                    f"{img_name}_slice-{slice_idx}_patch-{str(patch_idx+1)}-{str(n_patches)}.jpg",
+                )
+                cv2.imwrite(patch_path, patches[patch_idx])
 
     # Predict the segmentation masks of the image
-    img_mask, img = predict_image(
+    img_mask, img, big_model_img_mask, small_model_img_mask = predict_image(
         n_rows_patch,
         n_cols_patch,
         join("temp", "full_images"),
@@ -557,9 +579,10 @@ def predict_image_from_raw(
         path_model_full,
         path_model_patch,
         img_name,
+        use_patch,
     )
     # Create and save the outputs from the segmentation mask of the image
-    save_outputs(img_mask, img, img_name, path_output_dir)
+    save_outputs(img_mask, img, small_model_img_mask, big_model_img_mask, img_name, path_output_dir, use_patch)
 
 
 def main(
@@ -572,6 +595,7 @@ def main(
     preprocess: bool,
     min_range: int,
     max_range: int,
+    use_patch: bool
 ):
     """Main function to predict the segmentation masks of images located in a given directory
 
@@ -585,32 +609,35 @@ def main(
         path_model_full: a string denoting the path to the weights of the model to segment the full image
         path_model_patch: a string denoting the path to the weights of the model to segment the patches
         path_output_dir: a string denoting the path to the output directory
+        use_patch: a boolean denoting if a patch model is used
     """
     if not exists(path_images):
         raise ValueError(f"{path_images} path for images does not exist")
     if not exists(path_model_full):
-        raise ValueError(f"{path_model_full} path for images does not exist")
-    if not exists(path_model_patch):
-        raise ValueError(f"{path_model_patch} path for images does not exist")
+        raise ValueError(f"{path_model_full} path for full model does not exist")
+    if use_patch and not exists(path_model_patch):
+        raise ValueError(f"{path_model_patch} path for patch model does not exist")
     if min_range < 0 or max_range > 255:
         warnings.warn(
             f"({min_range},{max_range}) range provided for contrast adjustment while the pixel values range is (0,255). Nothing will happen.",
             UserWarning,
         )
-    if n_rows_patch <= 0 or n_cols_patch <= 0:
-        raise ValueError(
-            f"{(n_rows_patch,n_cols_patch)} provided for number of rows and columns of patch. A strictly positive number of rows and columns is needed. You must use the ones used for training"
-        )
-    if n_rows_patch == 1 and n_cols_patch == 1:
-        warnings.warn(
-            "Only 1 row and 1 column of patch won't change the original image. You must use the ones used for training",
-            UserWarning,
-        )
+    if use_patch:
+        if n_rows_patch <= 0 or n_cols_patch <= 0:
+            raise ValueError(
+                f"{(n_rows_patch,n_cols_patch)} provided for number of rows and columns of patch. A strictly positive number of rows and columns is needed. You must use the ones used for training"
+            )
+        if n_rows_patch == 1 and n_cols_patch == 1:
+            warnings.warn(
+                "Only 1 row and 1 column of patch won't change the original image. You must use the ones used for training",
+                UserWarning,
+            )
     # Create the temporary directory where the intermediary images will be saved
     os.makedirs(path_output_dir, exist_ok=True)
     os.makedirs("temp", exist_ok=True)
     os.makedirs(join("temp", "full_images"), exist_ok=True)
-    os.makedirs(join("temp", "patches"), exist_ok=True)
+    if use_patch:
+        os.makedirs(join("temp", "patches"), exist_ok=True)
     # Get the path to the images
     images_path = glob(join(path_images, "*"))
     # Iterate through the images' path
@@ -626,6 +653,7 @@ def main(
             path_model_full,
             path_model_patch,
             path_output_dir,
+            use_patch,
         )
     # Delete the temporary folder
     shutil.rmtree("temp")
@@ -644,6 +672,7 @@ if __name__ == "__main__":
     parser.add_argument("--preprocess", action="store_true", default=False)
     parser.add_argument("--min_contrast", type=int, default=0)
     parser.add_argument("--max_contrast", type=int, default=255)
+    parser.add_argument("--use_patch", action="store_true", default=False)
     args = parser.parse_args()
 
     ultralytics.checks()
@@ -657,4 +686,5 @@ if __name__ == "__main__":
         args.preprocess,
         args.min_contrast,
         args.max_contrast,
+        args.use_patch
     )
