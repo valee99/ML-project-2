@@ -6,16 +6,16 @@
 .
 ├── models
 │   ├──full                             
-│   │   ├── best.pt                     # Best model weight for YOLO11 on full images
-│   ├──patches
-│   │   ├── best.pt                     # Best model weight for YOLO11 on patches images
+│   │   └── best.pt                     # Best model weight for YOLO11 on full images
+│   └──patches
+│       └── best.pt                     # Best model weight for YOLO11 on patches images
 ├── src                                 # Source files
 │   ├── create_dataset.py
 │   ├── create_patch.py
 │   ├── evaluate.py
 │   ├── load_from_raw.py
 │   ├── predict.py
-│   ├── train.py
+│   └── train.py
 ├── combined_masks_output_example.png                  # Example output for masks
 ├── combined_segmentations_output_example.png          # Example output for segmentations
 ├── visualisation.ipynb                                # Visualization notebook
