@@ -1,5 +1,36 @@
 # Plankton Segmentation with Yolo11
 
+## Folder Structure
+
+```
+.
+├── runs                                # Load and stress tests
+│   ├── segmentation                    # YOLO model runs
+│   │   ├── yolo11n_ctrst-0-255_srfc-0-200_prcs-0_seg_patch_epochs-100_imgsz-190_batch-8
+│   │   │   ├── weights
+│   │   │       ├── best.pt             # Best model weight for YOLO11 nano
+│   │   ├── yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_epochs-100_imgsz-1520_batch-8
+│   │       ├── weights
+│   │           ├── best.pt             # Best model weight for YOLO11 nano
+├── src                                 # Source files
+│   ├── __pycache__
+│   │   ├── evaluate.cpython-312.pyc
+│   │   ├── load_from_raw.cpython-312.pyc
+│   │   ├── predict.cpython-312.pyc
+│   ├── create_dataset.py
+│   ├── create_patch.py
+│   ├── evaluate.py
+│   ├── load_from_raw.py
+│   ├── predict.py
+│   ├── train.py
+│   ├── visualisation.ipynb
+├── combined_masks_output_example.png                  # Example output for masks
+├── combined_segmentations_output_example.png          # Example output for segmentations
+├── visualisation.ipynb                                # Visualization notebook
+└── requirements.txt                                   # Python package requirements
+```
+
+
 ## Project Setup
 
 Install required packages with :
