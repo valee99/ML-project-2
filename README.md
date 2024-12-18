@@ -4,19 +4,14 @@
 
 ```
 .
-├── runs                                # Load and stress tests
-│   ├── segmentation                    # YOLO model runs
-│   │   ├── yolo11n_ctrst-0-255_srfc-0-200_prcs-0_seg_patch_epochs-100_imgsz-190_batch-8
-│   │   │   ├── weights
-│   │   │       ├── best.pt             # Best model weight for YOLO11 nano
-│   │   ├── yolo11n_ctrst-0-255_srfc-200_prcs-0_seg_epochs-100_imgsz-1520_batch-8
-│   │       ├── weights
-│   │           ├── best.pt             # Best model weight for YOLO11 nano
+├── runs                                # Folders for training output created by YOLO itself
+├── configs
+├── models
+    ├──full                             
+        ├── best.pt                     # Best model weight for YOLO11 on full images
+    ├──patches
+        ├── best.pt                     # Best model weight for YOLO11 on patches images
 ├── src                                 # Source files
-│   ├── __pycache__
-│   │   ├── evaluate.cpython-312.pyc
-│   │   ├── load_from_raw.cpython-312.pyc
-│   │   ├── predict.cpython-312.pyc
 │   ├── create_dataset.py
 │   ├── create_patch.py
 │   ├── evaluate.py
@@ -54,7 +49,8 @@ Create a config folder that will store the YAML files to train the YOLO models:
 - `mkdir -p configs`
 
 Create a model folder that will store your models weights:
-- `mkdir -p models`
+- `mkdir -p models/full`
+- `mkdir -p models/patches`
 
 ## Prepare Data
 
