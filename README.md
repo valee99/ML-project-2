@@ -4,8 +4,6 @@
 
 ```
 .
-├── runs                                # Folders for training output created by YOLO itself
-├── configs
 ├── models
     ├──full                             
         ├── best.pt                     # Best model weight for YOLO11 on full images
