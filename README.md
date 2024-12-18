@@ -18,7 +18,6 @@
 │   ├── load_from_raw.py
 │   ├── predict.py
 │   ├── train.py
-│   ├── visualisation.ipynb
 ├── combined_masks_output_example.png                  # Example output for masks
 ├── combined_segmentations_output_example.png          # Example output for segmentations
 ├── visualisation.ipynb                                # Visualization notebook
