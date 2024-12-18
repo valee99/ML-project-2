@@ -5,10 +5,10 @@
 ```
 .
 ├── models
-    ├──full                             
-        ├── best.pt                     # Best model weight for YOLO11 on full images
-    ├──patches
-        ├── best.pt                     # Best model weight for YOLO11 on patches images
+│   ├──full                             
+│   │   ├── best.pt                     # Best model weight for YOLO11 on full images
+│   ├──patches
+│   │   ├── best.pt                     # Best model weight for YOLO11 on patches images
 ├── src                                 # Source files
 │   ├── create_dataset.py
 │   ├── create_patch.py
