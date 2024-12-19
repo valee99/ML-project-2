@@ -22,10 +22,11 @@ In order to achieve our goal, Ultralytics YOLO11n model was applied on a large d
 │   ├── load_from_raw.py
 │   ├── predict.py
 │   └── train.py
+├── Plankton Detection and Segmentation      # PDF report
 ├── output_example_mask.png                  # Example output for masks
-├── output_example_segment.png          # Example output for segmentations
-├── visualisation.ipynb                                # Visualization notebook
-└── requirements.txt                                   # Python package requirements
+├── output_example_segment.png               # Example output for segmentations
+├── visualisation.ipynb                      # Visualization notebook
+└── requirements.txt                         # Python package requirements
 ```
 
 
