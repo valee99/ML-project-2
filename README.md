@@ -1,4 +1,4 @@
-# Plankton Detection and Segmentation in Lake Geneva Using Holographic Imaging with  Yolo11 Nano Model
+# Plankton Detection and Segmentation in Lake Geneva Using Holographic Imaging with  YOLO11 Nano Model
 
 The objective of this project was object segmentation throughout the water column of Lake Geneva, located near EPFL. Due to limited domain knowledge, we decided to not classify objects into Living (Planktons), Non-Living or Bubbles. Instead, our main goal was to implement a robust detection and segmentation model capable of identifying objects in the dataset. The segmented entities will then be used by domain experts to properly classify them.
 
