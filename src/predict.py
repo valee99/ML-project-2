@@ -304,46 +304,51 @@ def select_slices_for_output(
 
     for i in tqdm(range(1, nb_labels)):
 
-        connected_comp = np.where(label_im == i, 1, 0)
+        connected_mask = np.where(label_im == i, 1, 0)
+        connected_comp = np.where(label_im == i, full_img, 255)
 
-        indices = np.argwhere(connected_comp)
+        indices = np.argwhere(connected_comp < 255)
 
         z_min = indices[:, 0].min()
         z_max = indices[:, 0].max()
 
-        y_min = indices[:, 1].min()
-        y_max = indices[:, 1].max()
-
-        x_min = indices[:, 2].min()
-        x_max = indices[:, 2].max()
-
         if z_min == z_max:
+            y_min = indices[:, 1].min()
+            y_max = indices[:, 1].max()
+
+            x_min = indices[:, 2].min()
+            x_max = indices[:, 2].max()
             final_mask[y_min : y_max + 1, x_min : x_max + 1] = np.where(
-                connected_comp[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                connected_mask[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
                 z_min,
                 0,
             )
             final_img[y_min : y_max + 1, x_min : x_max + 1] = np.where(
-                connected_comp[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                connected_mask[z_min, y_min : y_max + 1, x_min : x_max + 1] == 1,
                 full_img[z_min, y_min : y_max + 1, x_min : x_max + 1],
                 final_img[y_min : y_max + 1, x_min : x_max + 1],
             )
 
         else:
-            selected_array = label_im[
-                z_min : z_max + 1, y_min : y_max + 1, x_min : x_max + 1
-            ]
+            selected_array = connected_comp[
+                z_min : z_max + 1]
             norm_v = []
-            for slice in selected_array:
-                norm_v.append(normalized_variance_focus(slice))
+            for slice_array in selected_array:
+                indices_slice = np.argwhere(slice_array < 255)
+                y_min = indices_slice[:, 0].min()
+                y_max = indices_slice[:, 0].max()
+
+                x_min = indices_slice[:, 1].min()
+                x_max = indices_slice[:, 1].max()
+                norm_v.append(normalized_variance_focus(slice_array[y_min : y_max + 1, x_min : x_max + 1]))
             z_to_keep = z_min + np.argmax(norm_v)
             final_mask[y_min : y_max + 1, x_min : x_max + 1] = np.where(
-                connected_comp[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                connected_mask[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
                 z_to_keep,
                 0,
             )
             final_img[y_min : y_max + 1, x_min : x_max + 1] = np.where(
-                connected_comp[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
+                connected_mask[z_to_keep, y_min : y_max + 1, x_min : x_max + 1] == 1,
                 full_img[z_to_keep, y_min : y_max + 1, x_min : x_max + 1],
                 final_img[y_min : y_max + 1, x_min : x_max + 1],
             )
@@ -451,6 +456,9 @@ def predict_image(
                 n_rows_patch,
                 n_cols_patch,
                 (image_height, image_width),
+            )
+            combined_patches_masks = binary_fill_holes(combined_patches_masks).astype(
+                int
             )
             del patches_masks
             small_model_img_mask.append(combined_patches_masks)

@@ -1,5 +1,11 @@
 # Plankton Segmentation with Yolo11
 
+The objective of this project was object segmentation throughout the water column of Lake Geneva, located near EPFL. Due to limited domain knowledge, we decided to not classify objects into Living (Planktons), Non-Living or Bubbles. Instead, our main goal was to implement a robust detection and segmentation model capable of identifying objects in the dataset. The segmented entities will then be used by domain experts to properly classify them.
+
+Our research was motivated by the need to improve the existing model used in plankton detection, as its generated images were often inaccurate, leading experts to make errors during analysis.
+
+In order to achieve our goal, Ultralytics YOLO11n model was applied on a large dataset which consisted of .tif images stacked on the depth-axis of the water columns. Each image consists of a slice of the water sample
+
 ## Folder Structure
 
 ```
@@ -102,8 +108,8 @@ The weights to the models are currently saved there:
 
 ### Examples of outputs
 
-![Combined Masks](combined_masks_output_example.png)
-![Combined Segmentations](combined_segmentations_output_example.png)
+![Combined Masks](output_example_mask.png)
+![Combined Segmentations](output_example_segment.png)
 
 ## Team Components
 For any question and/or curiosity, feel free to reach
