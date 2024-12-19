@@ -4,7 +4,7 @@ The objective of this project was object segmentation throughout the water colum
 
 Our research was motivated by the need to improve the existing model used in plankton detection, as its generated images were often inaccurate, leading experts to make errors during analysis.
 
-In order to achieve our goal, Ultralytics YOLO11n model was applied on a large dataset which consisted of .tif images stacked on the depth-axis of the water columns. Each image consists of a slice of the water sample
+In order to achieve our goal, Ultralytics YOLO11n model was applied on a large dataset which consisted of `.tif` images stacked on the depth-axis of the water columns. Each image consists of a slice of the water sample
 
 ## Folder Structure
 
